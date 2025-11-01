@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长方体斜投影演示 - GeoGebra</title>
+    
+    <!-- GeoGebra库 -->
+    <script src="https://cdn.geogebra.org/apps/deployggb.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .ggb-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .control-btn {
+            padding: 10px 20px;
+            margin: 0 5px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .control-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .formula {
+            font-family: 'Courier New', monospace;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>长方体斜投影数学原理演示</h1>
+        
+        <!-- GeoGebra应用容器 -->
+        <div id="ggb-element" class="ggb-container"></div>
+        
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button class="control-btn" onclick="resetDemo()">重置演示</button>
+            <button class="control-btn" onclick="toggleAnimation()">开始/停止动画</button>
+            <button class="control-btn" onclick="showHelp()">显示帮助</button>
+            <button class="control-btn" onclick="switchView()">切换视图</button>
+            <button class="control-btn" onclick="showVertices()">显示顶点坐标</button>
+        </div>
+        
+        <!-- 信息面板 -->
+        <div class="grid">
+            <div class="info-panel">
+                <h3>长方体斜投影原理</h3>
+                <p>长方体是最基本的三维几何形体，其斜投影具有重要的工程应用价值。</p>
+                
+                <h4>投影公式：</h4>
+                <div class="formula">
+                    x' = x + k·z·cosθ<br>
+                    y' = y + k·z·sinθ
+                </div>
+                
+                <h4>长方体参数：</h4>
+                <ul>
+                    <li>长度 (L)：x轴方向尺寸</li>
+                    <li>宽度 (W)：y轴方向尺寸</li>
+                    <li>高度 (H)：z轴方向尺寸</li>
+                    <li>投影系数 (k)：控制投影强度</li>
+                    <li>投影角度 (θ)：控制投影方向</li>
+                </ul>
+            </div>
+            
+            <div class="info-panel">
+                <h3>操作指南</h3>
+                <h4>基本操作：</h4>
+                <ul>
+                    <li>拖动滑动条调整长方体尺寸和投影参数</li>
+                    <li>观察8个顶点的投影变化</li>
+                    <li>查看12条棱边的投影关系</li>
+                    <li>分析6个面的投影形状</li>
+                </ul>
+                
+                <h4>键盘快捷键：</h4>
+                <ul>
+                    <li><strong>空格键</strong>：开始/停止动画</li>
+                    <li><strong>R键</strong>：重置演示</li>
+                    <li><strong>H键</strong>：显示帮助</li>
+                    <li><strong>V键</strong>：切换视图</li>
+                    <li><strong>方向键</strong>：微调参数</li>
+                    <li><strong>1-8键</strong>：高亮显示对应顶点</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 顶点信息面板 -->
+        <div id="vertices-info" class="info-panel" style="display: none;">
+            <h3>长方体顶点坐标</h3>
+            <div id="vertices-table"></div>
+        </div>
+    </div>
+
+    <script>
+        // GeoGebra应用配置
+        var parameters = {
+            "appName": "3d",
+            "width": "100%",
+            "height": "100%",
+            "borderColor":"#FFFFFF",
+            "borderRadius":"12px",
+            "showToolBar": true,
+            "showAlgebraInput": true,
+            "showMenuBar": true,
+            "allowStyleBar": true,
+            "enable3d": true,
+            "perspective": "O",
+            "appletOnLoad": function(api) {
+                window.ggbApp = api;
+                initDemo();
+            },
+            "language": "zh-CN",
+        };
+
+        // 创建GeoGebra应用
+        var ggbApp1 = new GGBApplet(parameters, true);
+        window.addEventListener('load', function() {
+            ggbApp1.inject('ggb-element');
+        });
+
+        // 全局变量
+        var animationInterval = null;
+        var animationRunning = false;
+        var currentView = "3d";
+        var verticesVisible = false;
+
+        // 长方体顶点定义
+        var vertices = [
+            {name: "V0", x: "0", y: "0", z: "0", label: "V0(0,0,0)"},
+            {name: "V1", x: "L", y: "0", z: "0", label: "V1(L,0,0)"},
+            {name: "V2", x: "L", y: "W", z: "0", label: "V2(L,W,0)"},
+            {name: "V3", x: "0", y: "W", z: "0", label: "V3(0,W,0)"},
+            {name: "V4", x: "0", y: "0", z: "H", label: "V4(0,0,H)"},
+            {name: "V5", x: "L", y: "0", z: "H", label: "V5(L,0,H)"},
+            {name: "V6", x: "L", y: "W", z: "H", label: "V6(L,W,H)"},
+            {name: "V7", x: "0", y: "W", z: "H", label: "V7(0,W,H)"}
+        ];
+
+        // 棱边定义
+        var edges = [
+            // 底面棱边
+            {start: "V0", end: "V1", color: "blue"},
+            {start: "V1", end: "V2", color: "blue"},
+            {start: "V2", end: "V3", color: "blue"},
+            {start: "V3", end: "V0", color: "blue"},
+            
+            // 顶面棱边
+            {start: "V4", end: "V5", color: "red"},
+            {start: "V5", end: "V6", color: "red"},
+            {start: "V6", end: "V7", color: "red"},
+            {start: "V7", end: "V4", color: "red"},
+            
+            // 侧面棱边
+            {start: "V0", end: "V4", color: "green"},
+            {start: "V1", end: "V5", color: "green"},
+            {start: "V2", end: "V6", color: "green"},
+            {start: "V3", end: "V7", color: "green"}
+        ];
+
+        // 初始化演示
+        function initDemo() {
+            if (!window.ggbApp) return;
+
+            try {
+                console.log("初始化长方体斜投影演示...");
+                
+                // 清除现有对象
+                ggbApp.reset();
+                
+                // 设置3D视图
+                ggbApp.evalCommand('SetPerspective("-T")');
+                ggbApp.evalCommand('SetViewDirection(30, 45)');
+                
+                // 创建参数滑动条
+                createSliders();
+                
+                // 创建长方体
+                createCuboid();
+                
+                // 创建投影
+                createProjection();
+                
+                // 创建公式文本
+                createFormulas();
+                
+                // 添加事件监听器
+                ggbApp.registerObjectUpdateListener('L', updateDemo);
+                ggbApp.registerObjectUpdateListener('W', updateDemo);
+                ggbApp.registerObjectUpdateListener('H', updateDemo);
+                ggbApp.registerObjectUpdateListener('k', updateDemo);
+                ggbApp.registerObjectUpdateListener('angle', updateDemo);
+                
+                // 键盘事件
+                document.addEventListener('keydown', handleKeyPress);
+                
+                console.log("长方体演示初始化完成！");
+                
+            } catch (e) {
+                console.error("初始化错误:", e);
+            }
+        }
+
+        // 创建滑动条
+        function createSliders() {
+            // 长方体尺寸
+            ggbApp.evalCommand('L = Slider(2, 10, 0.1, 6, "L", true)');
+            ggbApp.evalCommand('SetLabel(L, "长度 L")');
+            
+            ggbApp.evalCommand('W = Slider(2, 8, 0.1, 4, "W", true)');
+            ggbApp.evalCommand('SetLabel(W, "宽度 W")');
+            
+            ggbApp.evalCommand('H = Slider(2, 8, 0.1, 3, "H", true)');
+            ggbApp.evalCommand('SetLabel(H, "高度 H")');
+            
+            // 投影参数
+            ggbApp.evalCommand('k = Slider(0, 1, 0.01, 0.5, "k", true)');
+            ggbApp.evalCommand('SetLabel(k, "投影系数 k")');
+            
+            ggbApp.evalCommand('angle = Slider(0, 90, 1, 45, "angle", true)');
+            ggbApp.evalCommand('SetLabel(angle, "投影角度 θ")');
+        }
+
+        // 创建长方体
+        function createCuboid() {
+            // 创建顶点
+            vertices.forEach(vertex => {
+                ggbApp.evalCommand(`${vertex.name} = (${vertex.x}, ${vertex.y}, ${vertex.z})`);
+                ggbApp.evalCommand(`SetColor(${vertex.name}, "black")`);
+                ggbApp.evalCommand(`SetLabel(${vertex.name}, "${vertex.label}")`);
+                ggbApp.evalCommand(`SetPointSize(${vertex.name}, 8)`);
+            });
+
+            // 创建棱边
+            edges.forEach((edge, index) => {
+                const edgeName = `edge${index}`;
+                ggbApp.evalCommand(`${edgeName} = Segment(${edge.start}, ${edge.end})`);
+                ggbApp.evalCommand(`SetColor(${edgeName}, "${edge.color}")`);
+                ggbApp.evalCommand(`SetLineThickness(${edgeName}, 3)`);
+            });
+
+            // 创建面（可选）
+            createFaces();
+        }
+
+        // 创建面
+        function createFaces() {
+            // 底面
+            ggbApp.evalCommand('bottomFace = Polygon(V0, V1, V2, V3)');
+            ggbApp.evalCommand('SetColor(bottomFace, "lightblue")');
+            ggbApp.evalCommand('SetFilling(bottomFace, 0.3)');
+            
+            // 顶面
+            ggbApp.evalCommand('topFace = Polygon(V4, V5, V6, V7)');
+            ggbApp.evalCommand('SetColor(topFace, "lightcoral")');
+            ggbApp.evalCommand('SetFilling(topFace, 0.3)');
+            
+            // 前面
+            ggbApp.evalCommand('frontFace = Polygon(V0, V1, V5, V4)');
+            ggbApp.evalCommand('SetColor(frontFace, "lightgreen")');
+            ggbApp.evalCommand('SetFilling(frontFace, 0.2)');
+            
+            // 后面
+            ggbApp.evalCommand('backFace = Polygon(V2, V3, V7, V6)');
+            ggbApp.evalCommand('SetColor(backFace, "lightyellow")');
+            ggbApp.evalCommand('SetFilling(backFace, 0.2)');
+        }
+
+        // 创建投影
+        function createProjection() {
+            // 创建投影平面
+            ggbApp.evalCommand('projPlane = Plane(z = 0)');
+            ggbApp.evalCommand('SetColor(projPlane, "lightgray")');
+            ggbApp.evalCommand('SetFilling(projPlane, 0.2)');
+
+            // 创建投影顶点
+            vertices.forEach((vertex, index) => {
+                const projName = `${vertex.name}p`;
+                const xExpr = `${vertex.x} + k * ${vertex.z} * Cos(angle°)`;
+                const yExpr = `${vertex.y} + k * ${vertex.z} * Sin(angle°)`;
+                
+                ggbApp.evalCommand(`${projName} = (${xExpr}, ${yExpr})`);
+                ggbApp.evalCommand(`SetColor(${projName}, "darkred")`);
+                ggbApp.evalCommand(`SetLabel(${projName}, "${vertex.name}'")`);
+                ggbApp.evalCommand(`SetPointSize(${projName}, 8)`);
+
+                // 创建投影线
+                const lineName = `projLine${index}`;
+                ggbApp.evalCommand(`${lineName} = Line(${vertex.name}, (${xExpr}, ${yExpr}, -1))`);
+                ggbApp.evalCommand(`SetColor(${lineName}, "gray")`);
+                ggbApp.evalCommand(`SetLineStyle(${lineName}, 2)`);
+                ggbApp.evalCommand(`SetLineThickness(${lineName}, 1)`);
+            });
+
+            // 创建投影棱边
+            edges.forEach((edge, index) => {
+                const projEdgeName = `projEdge${index}`;
+                ggbApp.evalCommand(`${projEdgeName} = Segment(${edge.start}p, ${edge.end}p)`);
+                ggbApp.evalCommand(`SetColor(${projEdgeName}, "darkred")`);
+                ggbApp.evalCommand(`SetLineThickness(${projEdgeName}, 3)`);
+            });
+
+            // 创建投影面
+            createProjectionFaces();
+        }
+
+        // 创建投影面
+        function createProjectionFaces() {
+            // 底面投影（与原底面相同）
+            ggbApp.evalCommand('projBottomFace = Polygon(V0p, V1p, V2p, V3p)');
+            ggbApp.evalCommand('SetColor(projBottomFace, "lightblue")');
+            ggbApp.evalCommand('SetFilling(projBottomFace, 0.3)');
+            
+            // 顶面投影
+            ggbApp.evalCommand('projTopFace = Polygon(V4p, V5p, V6p, V7p)');
+            ggbApp.evalCommand('SetColor(projTopFace, "lightcoral")');
+            ggbApp.evalCommand('SetFilling(projTopFace, 0.3)');
+        }
+
+        // 创建公式文本
+        function createFormulas() {
+            // 投影公式
+            ggbApp.evalCommand('formula1 = Text("长方体斜投影公式：\\n对于顶点(x,y,z)，其投影为：\\nx\' = x + k·z·cosθ\\ny\' = y + k·z·sinθ", (-12, 8))');
+            ggbApp.evalCommand('SetFontSize(formula1, 14)');
+            
+            // 投影特性
+            ggbApp.evalCommand('formula2 = Text("投影特性：\\n• 底面投影与原底面全等\\n• 顶面投影发生平移\\n• 侧面投影为平行四边形\\n• 保持平行关系不变", (-12, 3))');
+            ggbApp.evalCommand('SetFontSize(formula2, 12)');
+            ggbApp.evalCommand('SetColor(formula2, "darkblue")');
+        }
+
+        // 更新演示
+        function updateDemo() {
+            if (!window.ggbApp) return;
+            
+            try {
+                // 更新顶点坐标
+                vertices.forEach(vertex => {
+                    ggbApp.evalCommand(`${vertex.name} = (${vertex.x}, ${vertex.y}, ${vertex.z})`);
+                });
+
+                // 更新投影
+                vertices.forEach((vertex, index) => {
+                    const projName = `${vertex.name}p`;
+                    const xExpr = `${vertex.x} + k * ${vertex.z} * Cos(angle°)`;
+                    const yExpr = `${vertex.y} + k * ${vertex.z} * Sin(angle°)`;
+                    
+                    ggbApp.evalCommand(`${projName} = (${xExpr}, ${yExpr})`);
+
+                    // 更新投影线
+                    const lineName = `projLine${index}`;
+                    ggbApp.evalCommand(`${lineName} = Line(${vertex.name}, (${xExpr}, ${yExpr}, -1))`);
+                });
+
+                ggbApp.evalCommand('UpdateConstruction()');
+                
+                // 更新顶点信息显示
+                if (verticesVisible) {
+                    showVertices();
+                }
+                
+            } catch (e) {
+                console.error("更新演示错误:", e);
+            }
+        }
+
+        // 动画控制
+        function toggleAnimation() {
+            if (animationRunning) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        }
+
+        function startAnimation() {
+            if (animationRunning) return;
+            
+            animationRunning = true;
+            animationInterval = setInterval(() => {
+                try {
+                    var k = ggbApp.getValue("k");
+                    var angle = ggbApp.getValue("angle");
+                    
+                    // 同时动画k值和角度
+                    var newK = k + 0.005;
+                    var newAngle = angle + 0.5;
+                    
+                    if (newK > 1) newK = 0;
+                    if (newAngle > 90) newAngle = 0;
+                    
+                    ggbApp.setValue("k", newK);
+                    ggbApp.setValue("angle", newAngle);
+                    
+                    updateDemo();
+                    
+                } catch (e) {
+                    console.error("动画错误:", e);
+                    stopAnimation();
+                }
+            }, 50);
+            
+            console.log("动画开始");
+        }
+
+        function stopAnimation() {
+            if (!animationRunning) return;
+            
+            animationRunning = false;
+            clearInterval(animationInterval);
+            animationInterval = null;
+            
+            console.log("动画停止");
+        }
+
+        // 重置演示
+        function resetDemo() {
+            stopAnimation();
+            if (window.ggbApp) {
+                ggbApp.setValue("L", 6);
+                ggbApp.setValue("W", 4);
+                ggbApp.setValue("H", 3);
+                ggbApp.setValue("k", 0.5);
+                ggbApp.setValue("angle", 45);
+                ggbApp.evalCommand('SetViewDirection(30, 45)');
+                updateDemo();
+            }
+        }
+
+        // 切换视图
+        function switchView() {
+            if (!window.ggbApp) return;
+            
+            if (currentView === "3d") {
+                ggbApp.evalCommand('SetActiveView(1)');
+                currentView = "2d";
+            } else {
+                ggbApp.evalCommand('SetActiveView(0)');
+                ggbApp.evalCommand('SetViewDirection(30, 45)');
+                currentView = "3d";
+            }
+        }
+
+        // 显示顶点坐标
+        function showVertices() {
+            const panel = document.getElementById('vertices-info');
+            const table = document.getElementById('vertices-table');
+            
+            if (!verticesVisible) {
+                // 生成顶点信息表格
+                let html = '<table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse:collapse;">';
+                html += '<tr style="background-color:#f0f0f0;"><th>顶点</th><th>3D坐标</th><th>投影坐标</th></tr>';
+                
+                vertices.forEach(vertex => {
+                    try {
+                        const x = ggbApp.getXcoord(vertex.name);
+                        const y = ggbApp.getYcoord(vertex.name);
+                        const z = ggbApp.getZcoord(vertex.name);
+                        
+                        const xp = ggbApp.getXcoord(vertex.name + 'p');
+                        const yp = ggbApp.getYcoord(vertex.name + 'p');
+                        
+                        html += `<tr>
+                            <td style="text-align:center;">${vertex.name}</td>
+                            <td style="text-align:center;">(${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})</td>
+                            <td style="text-align:center;">(${xp.toFixed(2)}, ${yp.toFixed(2)})</td>
+                        </tr>`;
+                    } catch (e) {
+                        console.error(`获取${vertex.name}坐标失败:`, e);
+                    }
+                });
+                
+                html += '</table>';
+                table.innerHTML = html;
+                panel.style.display = 'block';
+                verticesVisible = true;
+            } else {
+                panel.style.display = 'none';
+                verticesVisible = false;
+            }
+        }
+
+        // 显示帮助
+        function showHelp() {
+            alert("长方体斜投影演示帮助\n\n" +
+                  "基本概念：\n" +
+                  "- 长方体有8个顶点、12条棱边、6个面\n" +
+                  "- 斜投影保持平行关系，改变长度关系\n" +
+                  "- 底面投影与原底面全等\n" +
+                  "- 顶面投影根据投影参数发生平移\n\n" +
+                  "参数说明：\n" +
+                  "- L：长方体长度\n" +
+                  "- W：长方体宽度\n" +
+                  "- H：长方体高度\n" +
+                  "- k：投影系数(0-1)\n" +
+                  "- θ：投影角度(0-90°)\n\n" +
+                  "操作说明：\n" +
+                  "- 拖动滑动条调整参数\n" +
+                  "- 空格键：开始/停止动画\n" +
+                  "- R键：重置演示\n" +
+                  "- V键：切换视图\n" +
+                  "- 1-8键：高亮显示顶点\n" +
+                  "- 点击\"显示顶点坐标\"查看详细信息");
+        }
+
+        // 键盘事件处理
+        function handleKeyPress(event) {
+            if (!window.ggbApp) return;
+            
+            switch(event.key) {
+                case ' ':
+                    event.preventDefault();
+                    toggleAnimation();
+                    break;
+                case 'r':
+                case 'R':
+                    resetDemo();
+                    break;
+                case 'h':
+                case 'H':
+                    showHelp();
+                    break;
+                case 'v':
+                case 'V':
+                    switchView();
+                    break;
+                case '1': case '2': case '3': case '4':
+                case '5': case '6': case '7': case '8':
+                    highlightVertex(parseInt(event.key) - 1);
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    ggbApp.setValue("k", Math.min(ggbApp.getValue("k") + 0.02, 1));
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    ggbApp.setValue("k", Math.max(ggbApp.getValue("k") - 0.02, 0));
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    ggbApp.setValue("angle", Math.max(ggbApp.getValue("angle") - 2, 0));
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    ggbApp.setValue("angle", Math.min(ggbApp.getValue("angle") + 2, 90));
+                    break;
+            }
+        }
+
+        // 高亮显示顶点
+        function highlightVertex(index) {
+            if (index >= 0 && index < vertices.length) {
+                // 重置所有顶点颜色
+                vertices.forEach(vertex => {
+                    ggbApp.evalCommand(`SetColor(${vertex.name}, "black")`);
+                    ggbApp.evalCommand(`SetPointSize(${vertex.name}, 8)`);
+                });
+                
+                // 高亮当前顶点
+                const vertex = vertices[index];
+                ggbApp.evalCommand(`SetColor(${vertex.name}, "orange")`);
+                ggbApp.evalCommand(`SetPointSize(${vertex.name}, 12)`);
+                
+                // 高亮对应投影点
+                ggbApp.evalCommand(`SetColor(${vertex.name}p, "orange")`);
+                ggbApp.evalCommand(`SetPointSize(${vertex.name}p, 12)`);
+                
+                console.log(`高亮显示顶点 ${vertex.name}`);
+            }
+        }
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            stopAnimation();
+        });
+
+        console.log("长方体斜投影演示脚本加载完成");
+    </script>
+</body>
+</html>

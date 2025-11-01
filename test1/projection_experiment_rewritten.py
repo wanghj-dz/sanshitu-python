@@ -149,11 +149,12 @@ class ProjectionExperiment:
         return np.array([point[0], point[1], 0])
     
     def oblique_projection(self, point, angle_deg):
-        """斜投影: 只在x方向产生变形 - 修正版算法"""
+        """斜投影: 基于数学原理的从上往下斜投影算法"""
         angle_rad = math.radians(angle_deg)
         k = math.tan(angle_rad)
-        # 关键修正: 只在x方向产生变形，y方向保持不变
-        return np.array([point[0] + k * point[2], point[1], 0])
+        # 数学原理: x' = x - kx * z, y' = y - ky * z
+        # 对于从上往下的斜投影，kx = tan(θ), ky = 0
+        return np.array([point[0] - k * point[2], point[1], 0])
     
     def calculate_polygon_area(self, vertices):
         """使用shoelace公式计算多边形面积"""
@@ -593,7 +594,8 @@ class ProjectionExperiment:
 
 【投影原理】
 • 正投影：P(x,y,z) → P'(x,y,0)
-• 斜投影：P(x,y,z) → P'(x+k·z, y, 0)，其中k=tan(θ)
+• 斜投影：P(x,y,z) → P'(x - kx·z, y - ky·z, 0)
+• 从上往下斜投影：kx = tan(θ), ky = 0
 
 【版本信息】
 版本: 2.0 (完全重写版)
